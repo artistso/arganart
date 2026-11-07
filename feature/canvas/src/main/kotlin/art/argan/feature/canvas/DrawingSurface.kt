@@ -89,6 +89,12 @@ public class DrawingSurface(
     private var activeTool: StylusEventSource.ToolKind = StylusEventSource.ToolKind.UNKNOWN
     private var stylusPresent = false
 
+    /**
+     * Created on first stylus contact rather than in the constructor: the predictor
+     * binds to this View, and the View is not fully attached during construction.
+     */
+    private var predictor: StylusEventSource.Predictor? = null
+
     /** Number of committed strokes; the owner reads this for the history scrubber. */
     public val committedStrokeCount: Int get() = committed.size
 
@@ -110,6 +116,8 @@ public class DrawingSurface(
                 if (stylusPresent) {
                     onStylusDown?.invoke()
                     StylusEventSource.requestUnbuffered(this, event)
+                    if (predictor == null) predictor = StylusEventSource.Predictor(this)
+                    predictor?.record(event)
                     beginStroke(event, pointerIndex)
                 }
                 return true
@@ -133,6 +141,7 @@ public class DrawingSurface(
                 }
                 if (StylusEventSource.isDrawingTool(event.getToolType(pointerIndex))) {
                     if (activeStrokePoints.isEmpty()) beginStroke(event, pointerIndex)
+                    predictor?.record(event)
                     appendStrokeSamples(event, pointerIndex)
                 } else if (activeStrokePoints.isEmpty()) {
                     // Finger drag: hand the delta to the viewport for panning.
@@ -190,7 +199,7 @@ public class DrawingSurface(
         }
 
         predictedPoints = StylusEventSource.predictedPoints(
-            event = event,
+            predicted = predictor?.predict(),
             pointerIndex = pointerIndex,
             transform = { x, y ->
                 val t = viewport.transform

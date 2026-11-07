@@ -109,35 +109,55 @@ public object StylusEventSource {
     }
 
     /**
-     * Converts predicted samples only.
+     * A motion predictor bound to one view.
      *
-     * Predictions are a *hint* for the next two frames. They are drawn on their own
-     * layer and discarded the moment a real event arrives: a prediction that turned
-     * out wrong leaves nothing behind, because nothing was ever committed.
+     * WHY THIS AND NOT `getPredictedEvents()`. The P1 brief asks for
+     * `MotionEvent.getPredictedEvents()`. That method does not exist on Android — it
+     * is a **web Pointer Events** API. `MotionEvent` has no prediction surface at
+     * all. The verified Android equivalent is Jetpack's
+     * `androidx.input:input-motionprediction`: you `record()` real events and call
+     * `predict()` for the event that would occur at the next frame. (Checked against
+     * the AndroidX source and AOSP's MotionEvent.java, which contain no such method.)
+     *
+     * Predictions are still only a hint: they render on their own layer and are
+     * discarded when a real event arrives.
+     */
+    public class Predictor(private val view: View) {
+        private val delegate = androidx.input.motionprediction.MotionEventPredictor
+            .newInstance(view)
+
+        /** Records a real event. Must be called for every stylus event. */
+        public fun record(event: MotionEvent) {
+            runCatching { delegate.record(event) }
+        }
+
+        /** The predicted next-frame event, or null when prediction is unavailable. */
+        public fun predict(): MotionEvent? = runCatching { delegate.predict() }.getOrNull()
+    }
+
+    /**
+     * Converts a predicted [MotionEvent] into at most [maxPredictions] input points.
+     *
+     * The predictor returns one event for the next frame; a single point is enough
+     * to draw ahead, and chaining more than two would overshoot visibly.
      */
     public fun predictedPoints(
-        event: MotionEvent,
+        predicted: MotionEvent?,
         pointerIndex: Int,
         transform: (Float, Float) -> Pair<Float, Float>,
     ): List<InputPoint> {
-        val predicted = event.predictedEvents ?: return emptyList()
-        if (predicted.isEmpty()) return emptyList()
-        // At most 2 predicted frames: beyond that the error is worse than the
-        // latency it hides.
-        val limit = minOf(2, predicted.size)
-        val result = ArrayList<InputPoint>(limit)
-        for (i in 0 until limit) {
-            val pe = predicted[i]
-            val (cx, cy) = transform(pe.getX(pointerIndex), pe.getY(pointerIndex))
-            result += InputPoint(
-                timestampMillis = pe.eventTime,
+        if (predicted == null) return emptyList()
+        if (pointerIndex >= predicted.pointerCount) return emptyList()
+        val (cx, cy) = transform(predicted.getX(pointerIndex), predicted.getY(pointerIndex))
+        return listOf(
+            InputPoint(
+                timestampMillis = predicted.eventTime,
                 x = cx,
                 y = cy,
-                pressure = pe.getPressure(pointerIndex).coerceIn(0f, 1f),
+                pressure = predicted.getPressure(pointerIndex).coerceIn(0f, 1f),
                 isPredicted = true,
-            )
-        }
-        return result
+            ),
+        )
     }
 
     /**

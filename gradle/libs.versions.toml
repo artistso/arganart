@@ -23,6 +23,9 @@ composeBom = "2025.06.01"
 metrics = "1.0.0"
 # ONNX Runtime Android. Pinned to a verified release; see docs/research/model-feasibility.md.
 onnxruntime = "1.31.0"
+# Jetpack motion prediction. The Android equivalent of web getPredictedEvents();
+# the P1 brief names a web API that does not exist on Android.
+motionprediction = "1.0.0"
 junit = "4.13.2"
 
 [libraries]
@@ -42,6 +45,8 @@ androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 
 # JankStats: the frame-time source required by the P0 instrumentation brief.
 androidx-metrics-performance = { module = "androidx.metrics:metrics-performance", version.ref = "metrics" }
+
+androidx-input-motionprediction = { module = "androidx.input:input-motionprediction", version.ref = "motionprediction" }
 
 # Runtime only. No weights are bundled and nothing in the UI uses this yet.
 onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }

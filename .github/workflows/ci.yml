@@ -50,7 +50,21 @@ jobs:
         run: ./gradlew --no-daemon help --stacktrace
 
       - name: Assemble
-        run: ./gradlew --no-daemon assembleDebug --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew --no-daemon assembleDebug --stacktrace 2>&1 | tee build-output.log
+
+      # This sandbox cannot download job logs, so the build publishes its own
+      # compiler errors as check annotations, which ARE readable via the API.
+      # Delete once the build is green; it costs nothing as insurance.
+      - name: Surface compiler errors
+        if: failure()
+        run: |
+          echo "::group::compiler errors"
+          grep -E "^e: |^w: .*error|^> Task .*FAILED|error:|What went wrong|Caused by" build-output.log \
+            | head -60 \
+            | while IFS= read -r line; do echo "::error::${line//\%/%25}"; done
+          echo "::endgroup::"
 
       - name: Lint
         run: ./gradlew --no-daemon lint --stacktrace

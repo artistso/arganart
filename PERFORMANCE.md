@@ -51,6 +51,19 @@ there was nothing yet worth measuring. That was wrong: `docs/phases/P01-ink-engi
 instrumentation would have blocked the next phase rather than postponing work. Both now
 ship in P0.
 
+## Current evidence (end of P0)
+
+| Claim | Evidence | Strength |
+| --- | --- | --- |
+| Empty canvas pans and zooms | Installed `v0.1.0-p0` APK on a physical device; user reported it "fluid" | Strong (a human used it) but not a number |
+| Ink input-to-photon < 16 ms | n/a — no ink path exists yet (P1) | — |
+| < 1% janky frames | Instrumentation shipped and tested; **no reading taken on device yet** | Unknown |
+| Frame budget 8 ms | Design constraint only | Untested |
+
+The gap to close first in P1: open the debug overlay (three taps, bottom-left) on a real
+tablet and record the `frames=… jank=…% i2p …` line. Until that number exists, every
+performance statement in this repo is either a design constraint or a human impression.
+
 ## CI status
 
 `assembleDebug`, `lint` and `test` pass in CI (run 42374315085). The 57 host tests run on

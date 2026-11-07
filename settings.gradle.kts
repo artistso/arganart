@@ -35,6 +35,7 @@ include(":core:diagnostics")
 
 include(":ai:backend")
 include(":ai:runtime")
+include(":ai:onnx")
 
 include(":feature:canvas")
 include(":feature:motion")

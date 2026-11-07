@@ -44,6 +44,7 @@ ALLOWED_MODULES = {
     ":core:diagnostics",
     ":ai:backend",
     ":ai:runtime",
+    ":ai:onnx",
     ":feature:canvas",
     ":feature:motion",
     ":data",
@@ -58,6 +59,7 @@ MODULE_DIRS = {
     ":core:diagnostics": "core/diagnostics",
     ":ai:backend": "ai/backend",
     ":ai:runtime": "ai/runtime",
+    ":ai:onnx": "ai/onnx",
     ":feature:canvas": "feature/canvas",
     ":feature:motion": "feature/motion",
     ":data": "data",
@@ -80,6 +82,8 @@ ALLOWED_EDGES = {
     # Core is pure and depends on nothing in the product.
     (":ai:backend", ":core:motion"),
     (":ai:runtime", ":ai:backend"),
+    # Nothing depends on :ai:onnx yet. Adding an edge to it is a deliberate act:
+    # it is the moment native code starts shipping inside the APK.
     (":feature:canvas", ":design"),
     (":feature:canvas", ":core:ink"),
     (":feature:motion", ":design"),

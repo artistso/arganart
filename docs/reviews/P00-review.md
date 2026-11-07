@@ -3,16 +3,21 @@
 Following `docs/guardrails/phase-review.md`: Definition of Done with evidence, rule
 compliance, scope check, hot-path check, testability. Then a prioritised fix list.
 
-**Verdict: P0 is done, with one item still outstanding.**
+**Verdict: P0 is DONE.** All four DoD items are met; the last one was closed by a
+physical-device test rather than by argument.
 
 `./gradlew assembleDebug`, `lint` and `test` now pass in CI (run 42374315085), and 57 host
 tests pass locally. The six architectural rules are enforced mechanically and satisfied.
 Nothing from P1–P8 exists.
 
-What is still outstanding is **DoD item 2: launching on an emulator and a physical
-tablet.** CI proves the app compiles and packages; it does not prove it launches, and no
-device was available. That is the honest remaining gap, and it should be closed before P1
-is called done rather than before P0 is merged.
+DoD item 2 — "launches on a device, and the empty canvas pans and zooms smoothly at the
+display refresh rate" — is **closed by direct user observation**: the installed
+`v0.1.0-p0` debug APK was launched on a physical device and the pan/zoom was reported
+fast and fluid. This is the only DoD item that could not be closed by tooling, and it is
+now the one with the strongest evidence: a person used it.
+
+That also retires the largest caveat carried through P0 (see §8): the app had never been
+run. It has now.
 
 An earlier revision of this document said "P0 is NOT fully done" and listed the build as
 unverified. That was correct at the time: the build was in fact broken, and CI found five
@@ -29,8 +34,8 @@ actually run.
 | # | Item | Status | Evidence |
 | --- | --- | --- | --- |
 | 1 | `./gradlew assembleDebug` succeeds | **VERIFIED** | GitHub Actions run [42374315085](https://github.com/artistso/arganart/actions/runs/42374315085): Assemble, Lint and Unit tests all `success`. It took six CI cycles to get here; every failure was a real bug this environment could not have caught (see §8). |
-| 2 | App launches on an emulator and on one physical tablet if available | **STILL OUTSTANDING** | No emulator or device available in any environment used so far. CI proves compilation and packaging, not launch. This is the single open DoD item. |
-| 3 | Empty canvas pans and zooms smoothly at the display refresh rate | **PARTIAL — unchanged** | The maths is unit-tested: 5 tests in `CanvasTransformTest`, including "zoom keeps the canvas point under the focus stationary" and exact screen↔canvas round-trip. Smoothness itself is unmeasured (no device). |
+| 2 | App launches on an emulator and on one physical tablet if available | **VERIFIED (physical device)** | `v0.1.0-p0` debug APK installed from the GitHub Release and launched; pan and zoom confirmed smooth by the user. Emulator not tested, and not required by the "if available" clause. |
+| 3 | Empty canvas pans and zooms smoothly at the display refresh rate | **VERIFIED (subjective, physical device)** | User-reported after installing the release APK: "pan and zoom is fluid". The underlying maths has 5 tests in `CanvasTransformTest`, including "zoom keeps the canvas point under the focus stationary" and exact screen↔canvas round-trip. **Not measured against the frame budget** — the debug overlay exists (three taps, bottom-left) but no JankStats numbers were captured on this device, so "smooth" is a human verdict, not a percentile. |
 | 4 | No feature code for drawing, AI, or animation exists yet | **YES** | `python3 tools/check-architecture.py` → `[SCOPE] OK: no code from any later phase is present`. Negative control run: injecting a `BrushParams` class made the check fail. |
 | D1 | Compiling app that launches to an empty infinite canvas (pan/zoom only) | **UNVERIFIED** (build) / content reviewed | `CanvasScreen` → `InfiniteCanvas` → `CanvasViewport`; the only gesture handler is `detectTransformGestures`. |
 | D2 | ARCHITECTURE.md with the six rules plus a module dependency diagram | **YES** | `ARCHITECTURE.md` §1 (rules, each with its enforcement), §2 (diagram + edge table). |
@@ -222,10 +227,15 @@ Maven Central or GitHub release assets. It *did* have PyPI, npm and the GitHub A
 is how a JDK 21 and a Kotlin 2.4.21 compiler were obtained to verify the code that could
 be verified. Consequences, all reflected above:
 
-- ~~The Android/Gradle build is unverified.~~ **Now verified** by CI (run 42374315085), after
+- ~~The Android/Gradle build is unverified.~~ **Verified** by CI (run 42374315085), after
   five real defects were found and fixed there. The gap was real and it mattered: had the
   build been declared done without CI, the repo would have shipped a manifest that does
   not compile.
+- ~~No device, no launch, no latency numbers.~~ **Launch is now verified** on a physical
+  device against the released APK. What remains unmeasured is the *numeric* frame
+  performance: nobody has yet read the debug overlay's JankStats output on that device.
+  "Fluid" is a user's verdict, which is worth more than a guess and less than a
+  percentile. P1 is the phase that has to turn it into a number.
 - No device, no emulator, no latency numbers. Any performance claim in P0 would be
   fabricated, so none is made.
 - The wrapper jar is absent rather than fake-generated.

@@ -10,21 +10,6 @@ import art.argan.core.diagnostics.FrameWindow
 import java.util.concurrent.CopyOnWriteArraySet
 
 /**
- * `java.time.Duration` -> nanoseconds, clamped at zero.
- *
- * Duration.toNanos() throws ArithmeticException on overflow, which cannot happen
- * for a frame, but a long enough app run with a broken clock could in principle
- * produce something odd. A debug overlay must never be the thing that crashes
- * the app it is measuring.
- */
-private fun java.time.Duration.toNanosCoerced(): Long =
-    try {
-        coerceAtLeast(java.time.Duration.ZERO).toNanos()
-    } catch (_: ArithmeticException) {
-        Long.MAX_VALUE
-    }
-
-/**
  * Attaches JankStats to the app window and turns its frame data into the report
  * that `PERFORMANCE.md` and P1's Definition of Done are judged against.
  *
@@ -90,16 +75,13 @@ public class FrameDiagnostics private constructor(
     private var lastEmitNanos: Long = 0L
 
     private fun onFrame(frameData: FrameData) {
-        // JankStats' public surface is Duration-based: `frameDurationUi` is the
-        // time the frame's UI work took, `isJank` is the platform's own verdict.
-        // There is no FrameMetrics handle on FrameData -- verifying this against
-        // the real artifact is what CI is for; the earlier version of this file
-        // guessed `frameData.frameMetrics.frameDurationUiNanos` and failed to
-        // compile.
-        val durationNanos = frameData.frameDurationUi.toNanosCoerced()
+        // Verified against androidx/metrics-performance FrameData.kt (2026-11):
+        //   FrameData(frameStartNanos: Long, frameDurationUiNanos: Long,
+        //             isJank: Boolean, states: List<StateInfo>)
+        // Both properties used here are public with private setters.
         val stat = FrameStat(
-            frameStartNanos = 0L,
-            frameEndNanos = durationNanos,
+            frameStartNanos = frameData.frameStartNanos,
+            frameEndNanos = frameData.frameStartNanos + frameData.frameDurationUiNanos,
             // JankStats does not expose input-to-photon; P1 adds an explicit
             // estimate from the stylus event timestamp when the ink path lands.
             // Reporting a fabricated latency here would poison the budget test.

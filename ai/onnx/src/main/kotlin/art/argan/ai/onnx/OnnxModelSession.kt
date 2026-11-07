@@ -40,15 +40,28 @@ public class OnnxModelSession(
     threads: Int = DEFAULT_THREADS,
 ) : Closeable {
 
-    private val environment: OrtEnvironment = OrtEnvironment.getEnvironment()
+    // LAZY, and this is load-bearing in two ways:
+    //
+    // 1. `OrtEnvironment.getEnvironment()` loads the ONNX Runtime native library.
+    //    Doing that as a field initialiser means *any* construction attempt pays
+    //    the native load, so a "no model installed" check would crash with
+    //    UnsatisfiedLinkError before it could report the absence. On a JVM unit
+    //    test there is no Android native library at all, so that ordering turns a
+    //    recoverable state into a hard failure.
+    // 2. P7 requires the app to be fully usable with the model deleted. The
+    //    absence of a model must never touch native code.
+    private val environment: OrtEnvironment by lazy { OrtEnvironment.getEnvironment() }
     private val session: OrtSession
 
     init {
-        require(modelPath.isNotBlank()) { "modelPath must not be blank" }
+        if (modelPath.isBlank()) {
+            throw ModelNotAvailableException("modelPath must not be blank")
+        }
         val file = java.io.File(modelPath)
         if (!file.isFile) {
             // Not a crash-worthy condition: P7 requires the app to work without a
-            // model. Callers catch this and fall back.
+            // model. Callers catch this and fall back. Raised BEFORE the lazy
+            // environment is touched, so no native library is loaded.
             throw ModelNotAvailableException("No model file at $modelPath")
         }
         try {

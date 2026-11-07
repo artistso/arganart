@@ -86,6 +86,11 @@ class OnnxOutputFlatteningTest {
 
     @Test
     fun `missing model file is a supported state, not a crash`() {
+        // Regression guard for a real CI failure: the ONNX environment used to be
+        // a field initialiser, so constructing this class loaded the native
+        // library before the file check ran. The test then died with
+        // UnsatisfiedLinkError instead of exercising the fallback -- which would
+        // also have happened on a tablet with no model installed.
         // P7 requires the app to be fully usable with the model deleted. The
         // constructor must therefore raise the specific exception a caller can
         // catch to fall back, not a generic failure.

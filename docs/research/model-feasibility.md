@@ -128,3 +128,31 @@ Two things this changes from memory-based code, both of which would have failed 
 
 1. `OrtSession.Result` is **nested** (`OrtSession.Result`), not a top-level `OrtSessionResult`.
 2. `createTensor` for floats takes a `FloatBuffer` + `long[]` shape, not a `float[]` + shape.
+
+---
+
+## 8. APK delivery
+
+`app-debug.apk` (26.4 MB) is attached to the `v0.1.0-p0` GitHub Release:
+
+```
+https://github.com/artistso/arganart/releases/download/v0.1.0-p0/app-debug.apk
+```
+
+Two paths exist so neither depends on the other:
+
+| Path | How |
+| --- | --- |
+| Release asset (stable URL) | Push a `v*` tag; `publish-apk` attaches the APK. |
+| Actions artifact (per run) | Actions → the run → **Argan App APK** artifact. |
+
+The sandbox this was built in cannot download either one (CI artifacts redirect to a
+blocked Azure host), so the file was **not** verified by installation here. CI asserts
+that `assembleDebug` produced a non-empty APK before uploading, which is why the size is
+known rather than assumed.
+
+**Not verified: that it launches.** No emulator or device has been available at any point.
+P0 DoD item 2 remains open.
+
+A debug APK is signed with the debug keystore, so it installs on any device with
+"install unknown apps" allowed, and it cannot be published to Play.

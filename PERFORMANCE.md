@@ -51,6 +51,12 @@ there was nothing yet worth measuring. That was wrong: `docs/phases/P01-ink-engi
 instrumentation would have blocked the next phase rather than postponing work. Both now
 ship in P0.
 
+## CI status
+
+`assembleDebug`, `lint` and `test` pass in CI (run 42374315085). The 57 host tests run on
+every push. No numbers in this file are measurements yet, and none will be added from an
+emulator.
+
 ## Measurement rules (for every later phase)
 
 1. Numbers come from a physical device, not an emulator. Emulator frame times are

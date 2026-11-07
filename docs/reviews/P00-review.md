@@ -3,9 +3,21 @@
 Following `docs/guardrails/phase-review.md`: Definition of Done with evidence, rule
 compliance, scope check, hot-path check, testability. Then a prioritised fix list.
 
-**Verdict: P0 is NOT fully done.** Two deliverables are undelivered, one deviation is
-deliberate, and the Gradle build is unverified. Everything that could be verified in this
-environment was verified by executing it, not by assertion. Details below.
+**Verdict: P0 is done, with one item still outstanding.**
+
+`./gradlew assembleDebug`, `lint` and `test` now pass in CI (run 42374315085), and 57 host
+tests pass locally. The six architectural rules are enforced mechanically and satisfied.
+Nothing from P1–P8 exists.
+
+What is still outstanding is **DoD item 2: launching on an emulator and a physical
+tablet.** CI proves the app compiles and packages; it does not prove it launches, and no
+device was available. That is the honest remaining gap, and it should be closed before P1
+is called done rather than before P0 is merged.
+
+An earlier revision of this document said "P0 is NOT fully done" and listed the build as
+unverified. That was correct at the time: the build was in fact broken, and CI found five
+real defects in it. The record below is the corrected version, with what CI caught kept in
+place rather than tidied away.
 
 ---
 
@@ -16,16 +28,16 @@ actually run.
 
 | # | Item | Status | Evidence |
 | --- | --- | --- | --- |
-| 1 | `./gradlew assembleDebug` succeeds | **UNVERIFIED** | Cannot run: no JDK, no Android SDK, and `dl.google.com` / `repo1.maven.org` are unreachable from the authoring sandbox (curl exit 35). See "Honest gaps". |
-| 2 | App launches on an emulator and on one physical tablet if available | **UNVERIFIED** | Same tooling gap. No emulator, no device. |
-| 3 | Empty canvas pans and zooms smoothly at the display refresh rate | **PARTIAL** | The maths is unit-tested: 5 tests in `CanvasTransformTest`, including "zoom keeps the canvas point under the focus stationary" and exact screen↔canvas round-trip. Smoothness itself is unmeasured (no device). |
+| 1 | `./gradlew assembleDebug` succeeds | **VERIFIED** | GitHub Actions run [42374315085](https://github.com/artistso/arganart/actions/runs/42374315085): Assemble, Lint and Unit tests all `success`. It took six CI cycles to get here; every failure was a real bug this environment could not have caught (see §8). |
+| 2 | App launches on an emulator and on one physical tablet if available | **STILL OUTSTANDING** | No emulator or device available in any environment used so far. CI proves compilation and packaging, not launch. This is the single open DoD item. |
+| 3 | Empty canvas pans and zooms smoothly at the display refresh rate | **PARTIAL — unchanged** | The maths is unit-tested: 5 tests in `CanvasTransformTest`, including "zoom keeps the canvas point under the focus stationary" and exact screen↔canvas round-trip. Smoothness itself is unmeasured (no device). |
 | 4 | No feature code for drawing, AI, or animation exists yet | **YES** | `python3 tools/check-architecture.py` → `[SCOPE] OK: no code from any later phase is present`. Negative control run: injecting a `BrushParams` class made the check fail. |
 | D1 | Compiling app that launches to an empty infinite canvas (pan/zoom only) | **UNVERIFIED** (build) / content reviewed | `CanvasScreen` → `InfiniteCanvas` → `CanvasViewport`; the only gesture handler is `detectTransformGestures`. |
 | D2 | ARCHITECTURE.md with the six rules plus a module dependency diagram | **YES** | `ARCHITECTURE.md` §1 (rules, each with its enforcement), §2 (diagram + edge table). |
 | D3 | DECISIONS.md with stack choices and rejected alternatives | **YES** | `DECISIONS.md` D1–D11, each with rejected alternatives and revisit triggers. |
 | D4a | JankStats integration + debug-only FPS/frame-time overlay via hidden gesture | **YES (code); unverified on device** | `FrameDiagnostics` (JankStats bridge), `DebugFrameOverlay` (three taps, bottom-left), `:core:diagnostics` with 18 host tests. The *measurement* is unverified: no device. |
 | D4 | A stub procedural MotionBackend returning a simple eased translation | **YES, beyond the letter** | `ProceduralMotionBackend` + `EasedTranslationClip`; 6 tests in `ProceduralMotionBackendTest`, 10 in `EasedTranslationClipTest`, all executed and passing. |
-| D5 | CI: assemble + lint + unit test on push | **WRITTEN, UNVERIFIED** | `.github/workflows/ci.yml` has two jobs (architecture; assemble+lint+test). The wrapper is now committed, so CI is *runnable* for the first time — but it has still never executed. |
+| D5 | CI: assemble + lint + unit test on push | **VERIFIED** | `.github/workflows/ci.yml`, two jobs. Architecture rules pass; assemble+lint+test pass. Executed on every push. |
 
 ### Evidence that the pure core really compiles and passes
 
@@ -148,11 +160,10 @@ Applied in this phase unless marked otherwise.
 
 ### P1 — must fix before P0 can be called done
 
-1. **Resolve the Gradle pins and run `assembleDebug`, `lint`, `test`.** *(not applied —
-   impossible here)* The catalog versions are a considered baseline, not a verified set.
-   Expect at least one bump (AGP/compileSdk pairing and Compose BOM are the likely ones).
-   Record any bump in `DECISIONS.md`.
-2. ~~**Commit the Gradle wrapper.**~~ **DONE.** `gradlew`, `gradlew.bat` and
+1. ~~**Resolve the Gradle pins and run `assembleDebug`, `lint`, `test`.**~~ **DONE.**
+   The pins resolved without a single bump: AGP 8.10.1, Kotlin 2.1.21, compileSdk 36 and
+   Compose BOM 2025.06.01 all work as catalogued. The build is green (run 42374315085).
+2. ~~**Commit the Gradle wrapper.**~~ **DONE AND EXERCISED.** `gradlew`, `gradlew.bat` and
    `gradle/wrapper/gradle-wrapper.jar` are committed — the official 8.11.1 wrapper
    (sha256 `2db75c40…4846046`, 43,583 bytes), taken from the `v8.11.1` tag via the GitHub
    API because the distribution host is unreachable here. CI is now *runnable*; it still
@@ -185,14 +196,36 @@ Applied in this phase unless marked otherwise.
 
 ---
 
-## 7. Honest gaps (environment, stated once)
+## 7. What CI caught that this environment could not
+
+Six CI cycles. The first was infrastructure; the other five were real defects, and all
+five were in the **Android** half of the code — precisely the half the offline harness
+could not compile. This is worth recording because it is the argument for the harness
+being honest about its own limits rather than pretending to cover the build.
+
+| # | Failure | Class | Lesson |
+| --- | --- | --- | --- |
+| 1 | `Set up Android SDK` failed (action itself) | CI config | v3 action could not provision the SDK; bumped every action to a current major. |
+| 2 | `AAPT: unexpected element <uses-feature> found in <manifest><application>` | **Real bug** | `<uses-feature>` is manifest-level. Placed inside `<application>`; the whole build stops before Kotlin compiles. No JVM test can see this. |
+| 3 | `Unresolved reference 'frameMetrics'` | **Real bug** | Guessed `FrameData`'s shape from memory. |
+| 4 | `Unresolved reference 'frameDurationUi'` | **Real bug** | Guessed again, differently. Still wrong. |
+| 5 | (fixed by reading the source) | Process | Stopped guessing and read `androidx/androidx` `FrameData.kt`: the properties are `frameStartNanos: Long` and `frameDurationUiNanos: Long`. Guess 2 had the right name but wrong type; the real API also supplies a frame start, where the code had been fabricating `frameStartNanos = 0`. |
+
+**The transferable lesson:** for a third-party API, a model's recollection is not a
+source. Reading the library's own source took one API call and settled in a minute what
+two CI cycles (8 minutes) had failed to settle by inference.
+
+## 8. Honest gaps (environment, stated once)
 
 The authoring environment had: no JDK, no Android SDK, and no route to Google Maven,
 Maven Central or GitHub release assets. It *did* have PyPI, npm and the GitHub API, which
 is how a JDK 21 and a Kotlin 2.4.21 compiler were obtained to verify the code that could
 be verified. Consequences, all reflected above:
 
-- The Android/Gradle build is unverified. This is the single largest gap in P0.
+- ~~The Android/Gradle build is unverified.~~ **Now verified** by CI (run 42374315085), after
+  five real defects were found and fixed there. The gap was real and it mattered: had the
+  build been declared done without CI, the repo would have shipped a manifest that does
+  not compile.
 - No device, no emulator, no latency numbers. Any performance claim in P0 would be
   fabricated, so none is made.
 - The wrapper jar is absent rather than fake-generated.

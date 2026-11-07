@@ -226,9 +226,13 @@ fake and caller to own a scope. No further action.
 
 Pinned, no dynamic versions, no `+`. The catalog is the single place to bump anything.
 
-**P0 caveat, stated plainly:** the Android/Gradle pins in `gradle/libs.versions.toml`
-could not be resolved in the environment P0 was built in (no Android SDK, no JDK, and
-Google Maven/Maven Central unreachable). They are a considered baseline, not a verified
-one. The first CI run is the authority; if a pin fails to resolve, bump it in that same PR
-and add a line here. The pure-Kotlin modules *were* compiled and their 39 unit tests
-*were* executed against a real Kotlin 2.4.x compiler — see `docs/reviews/P00-review.md`.
+**Resolved at P0.** The pins in `gradle/libs.versions.toml` were a considered baseline
+that could not be resolved in the authoring sandbox. CI has now resolved every one of them
+**without a single bump**: AGP 8.10.1, Kotlin 2.1.21, compileSdk/targetSdk 36, Compose BOM
+2025.06.01, `metrics-performance` 1.0.0. `assembleDebug`, `lint` and `test` all pass
+(run 42374315085).
+
+Two smaller manifest decisions were forced by CI rather than chosen: `<uses-feature>` had
+to move out of `<application>` (an AAPT error, not a style preference), and the JankStats
+frame type was `FrameData(frameStartNanos, frameDurationUiNanos, isJank, states)` — see
+`docs/reviews/P00-review.md` §7.

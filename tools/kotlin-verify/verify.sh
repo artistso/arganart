@@ -32,6 +32,7 @@ src_dirs=(
   "core/ink/src/main/kotlin"
   "core/motion/src/main/kotlin"
   "core/spatial/src/main/kotlin"
+  "core/diagnostics/src/main/kotlin"
   "ai/backend/src/main/kotlin"
   "ai/runtime/src/main/kotlin"
 )
@@ -40,6 +41,7 @@ test_dirs=(
   "core/ink/src/test/kotlin"
   "core/motion/src/test/kotlin"
   "core/spatial/src/test/kotlin"
+  "core/diagnostics/src/test/kotlin"
   "ai/backend/src/test/kotlin"
   "ai/runtime/src/test/kotlin"
 )

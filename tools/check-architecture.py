@@ -41,6 +41,7 @@ ALLOWED_MODULES = {
     ":core:ink",
     ":core:motion",
     ":core:spatial",
+    ":core:diagnostics",
     ":ai:backend",
     ":ai:runtime",
     ":feature:canvas",
@@ -54,6 +55,7 @@ MODULE_DIRS = {
     ":core:ink": "core/ink",
     ":core:motion": "core/motion",
     ":core:spatial": "core/spatial",
+    ":core:diagnostics": "core/diagnostics",
     ":ai:backend": "ai/backend",
     ":ai:runtime": "ai/runtime",
     ":feature:canvas": "feature/canvas",
@@ -74,6 +76,7 @@ ALLOWED_EDGES = {
     (":app", ":ai:backend"),
     (":app", ":ai:runtime"),
     (":app", ":data"),
+    (":app", ":core:diagnostics"),
     # Core is pure and depends on nothing in the product.
     (":ai:backend", ":core:motion"),
     (":ai:runtime", ":ai:backend"),
@@ -84,8 +87,11 @@ ALLOWED_EDGES = {
     (":design", ":core:ink"),
 }
 
-PURE_JVM_MODULES = {":core:ink", ":core:motion", ":core:spatial", ":ai:backend", ":ai:runtime"}
-CORE_MODULES = {":core:ink", ":core:motion", ":core:spatial"}
+PURE_JVM_MODULES = {
+    ":core:ink", ":core:motion", ":core:spatial", ":core:diagnostics",
+    ":ai:backend", ":ai:runtime",
+}
+CORE_MODULES = {":core:ink", ":core:motion", ":core:spatial", ":core:diagnostics"}
 UI_MODULES = {":feature:canvas", ":feature:motion", ":app"}
 
 # :feature:* and :design see only the *interfaces*. :app is the composition root:

@@ -31,6 +31,7 @@ include(":app")
 include(":core:ink")
 include(":core:motion")
 include(":core:spatial")
+include(":core:diagnostics")
 
 include(":ai:backend")
 include(":ai:runtime")

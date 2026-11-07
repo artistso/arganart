@@ -19,6 +19,11 @@ phases that can be measured.
 
 ## What exists at P0
 
+- **JankStats collection and a debug frame overlay**, as the brief requires. The statistics
+  (`:core:diagnostics`) are pure Kotlin with 18 host-runnable tests; the Android bridge and
+  the overlay (three taps, bottom-left corner) are in `:app` and are debug-only.
+- **A verdict, not a vibe.** `FrameReport.verdict` is `PASS`/`FAIL`/`INSUFFICIENT_DATA`,
+  and reports `INSUFFICIENT_DATA` below 60 frames rather than optimistically passing.
 - **Design constraints, not measurements.** The two things worth asserting before any
   pixel is drawn:
   1. `MotionClip.sampleInto` writes into a caller-owned `Pose`; resampling allocates
@@ -29,14 +34,22 @@ phases that can be measured.
 - **Architecture check in `./gradlew check`.** R6 refuses a sampling API without an
   allocation-free variant, so a future hot path cannot be added without one.
 
+### Known limitation, stated
+
+The overlay cannot show input-to-photon yet: JankStats does not expose it, and the stylus
+event path it would be derived from does not exist until P1. The overlay prints
+`i2p: n/a (P1)` rather than a plausible-looking number.
+
 ## What does *not* exist yet, deliberately
 
-JankStats, the debug FPS/frame-time overlay, Macrobenchmark tests, the allocation scan,
-LOD, and thermal policy. The P0 brief lists the *overlay and JankStats integration* as a
-P0 deliverable; that item is **not delivered** and is tracked in
-`docs/reviews/P00-review.md` as an open item with its owner phase, because measuring a
-canvas that cannot yet draw would produce numbers with no meaning. This is a stated
-deviation, not an oversight.
+Macrobenchmark tests, the allocation scan, LOD and thermal policy. These are P10, and
+each needs a draw path to measure.
+
+An earlier draft of this file deferred JankStats and the overlay to P1 on the grounds that
+there was nothing yet worth measuring. That was wrong: `docs/phases/P01-ink-engine.md` has
+"JankStats shows <1% janky frames" in *its* Definition of Done, so deferring the
+instrumentation would have blocked the next phase rather than postponing work. Both now
+ship in P0.
 
 ## Measurement rules (for every later phase)
 

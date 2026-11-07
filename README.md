@@ -27,6 +27,7 @@ never will be.
 :core:ink       stylus input, stroke model, raster/vector engine   (pure JVM)
 :core:motion    motion model, timing, procedural engine           (pure JVM)
 :core:spatial   canvas geometry -> intent                          (pure JVM)
+:core:diagnostics frame statistics: jank %, latency percentiles     (pure JVM)
 :ai:backend     ModelBackend / MotionBackend interfaces + DTOs     (pure JVM)
 :ai:runtime     backend implementations (stub procedural motion only)
 :feature:canvas the infinite canvas surface
@@ -51,15 +52,18 @@ needs no Android SDK at all — it is the fastest useful check on a fresh machin
 
 ### Gradle wrapper
 
-`gradle/wrapper/gradle-wrapper.jar` is a binary and was **not** generated in the
-environment that wrote P0. Regenerate it once on a machine with Gradle installed:
+`gradlew`, `gradlew.bat` and `gradle/wrapper/gradle-wrapper.jar` are committed, so
+`./gradlew` works on a fresh clone with no local Gradle install. The jar is the official
+Gradle 8.11.1 wrapper (43,583 bytes, sha256
+`2db75c40782f5e8ba1fc278a5574bab070adccb2d21ca5a6e5ed840888448046`), taken from the
+`v8.11.1` tag rather than regenerated, because the authoring environment had no Gradle to
+generate it with.
+
+If you ever need to re-pin it:
 
 ```bash
 gradle wrapper --gradle-version 8.11.1
 ```
-
-Commit the resulting `gradlew`, `gradlew.bat` and `gradle/wrapper/*`. CI then works
-unchanged.
 
 ## Verifying the pure core without Android tooling
 

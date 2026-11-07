@@ -113,14 +113,16 @@ adapter.
 │                  :core:ink                   │              │  :core:motion  │
 └──────────────────────────────────────────────┘              └────────────────┘
 
-                          :core:spatial   (pure; depends on nothing)
+                    :core:spatial      :core:diagnostics
+                   (pure; depends on  (frame statistics; fed by
+                    nothing)           JankStats in :app)
 ```
 
 Edges, as permitted by `ALLOWED_EDGES` in `tools/check-architecture.py`:
 
 | Module | May depend on |
 | --- | --- |
-| `:app` | `:design`, `:feature:canvas`, `:feature:motion`, `:core:ink`, `:core:motion`, `:core:spatial`, `:ai:backend`, `:ai:runtime`, `:data` |
+| `:app` | `:design`, `:feature:canvas`, `:feature:motion`, `:core:ink`, `:core:motion`, `:core:spatial`, `:core:diagnostics`, `:ai:backend`, `:ai:runtime`, `:data` |
 | `:feature:canvas` | `:design`, `:core:ink` |
 | `:feature:motion` | `:design`, `:core:motion` |
 | `:ai:backend` | `:core:motion` (shared motion value types) |
@@ -156,6 +158,13 @@ later-phase vocabulary, so a scaffold cannot quietly grow into P1–P8:
 | `:feature:motion` | the entire ribbon editor | P2 |
 | `:data` | project format body, autosave, journaling, encryption | P9 |
 | `:ai:runtime` | any model, any download, any ONNX session | P7 |
+
+`core:diagnostics` is the one module not named in the brief's module list. It exists
+because the P0 brief requires JankStats and a debug FPS/frame-time overlay as
+*instrumentation*, and because P1's Definition of Done is stated as "<1% janky frames" —
+a number that must be produced by tested arithmetic rather than by eyeballing a log. The
+statistics live in a pure module so they are unit-testable on the host; only the
+`JankStats` bridge is Android code, in `:app`. Rationale in DECISIONS.md D12.
 
 What *does* exist in the "AI" module at P0 is the procedural `MotionBackend` and a
 `ModelBackend` that reports "not in this build". Motion is procedural because the brief

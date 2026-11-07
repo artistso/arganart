@@ -176,6 +176,52 @@ a coding agent in a hurry.
 
 ---
 
+## D12 — Frame statistics live in a pure module; only the JankStats bridge is Android *(P0)*
+
+**Decision.** A new `:core:diagnostics` module (pure JVM) owns the arithmetic:
+`FrameStat`, `FrameWindow`, `FrameReport`, `FrameBudget`. `:app` owns a thin
+`FrameDiagnostics` that forwards `JankStats` callbacks into it, and a debug-only overlay
+toggled by three taps in the bottom-left corner.
+
+**Why.** Three reasons, in order of weight:
+
+1. **The numbers get quoted.** P1's DoD is "<1% janky frames"; `PERFORMANCE.md` states
+   median < 16 ms and p95 < 24 ms. Those claims must come from tested code. Splitting the
+   arithmetic out means 18 host tests pin the percentile maths, the ring's bounded memory
+   and the verdict logic — including the important case that a good median cannot hide a
+   bad p95.
+2. **Honesty about missing data.** `FrameReport` returns `null` (not `0`) for unobtainable
+   statistics, and `BudgetVerdict.INSUFFICIENT_DATA` (not `PASS`) below 60 frames. An
+   instrumentation layer that reports "all good" when it has no data is worse than none.
+3. **Cost.** Percentiles are recomputed at most once a second, not per frame, and the
+   window is a fixed 240-frame ring. An overlay that grows memory changes the behaviour
+   it exists to measure.
+
+**Rejected.** Putting it all in `:app` (untestable without a device, which is exactly the
+problem P0's instrumentation needs to avoid); using JankStats' own aggregate percentages
+(they answer the platform's question, not the product's 8 ms ink budget, and cannot be
+asserted in a unit test).
+
+**Deviation.** This module is not in the brief's module list. It is added under
+"PERFORMANCE INSTRUMENTATION", which the P0 brief does list as a deliverable. If you would
+rather keep the module list literally at ten, the same code can move into `:core:motion`'s
+package — but it has nothing to do with motion, so the coercion would be worse than the
+extra module.
+
+**Note on input-to-photon.** JankStats cannot supply it. `FrameStat.inputToPhotonNanos` is
+therefore `null` at P0 and the overlay prints `i2p: n/a (P1)`. P1 wires an explicit
+estimate from the stylus event timestamp; until then no latency figure is fabricated.
+
+---
+
+## D13 — The `suspend` question is settled: `generate` stays non-suspending *(P0, closed)*
+
+Reconfirmed rather than left open. See D4. Rationale unchanged: a cold `Flow` already
+suspends inside its own context, so the keyword adds no capability while forcing every
+fake and caller to own a scope. No further action.
+
+---
+
 ## Dependency pinning policy
 
 Pinned, no dynamic versions, no `+`. The catalog is the single place to bump anything.

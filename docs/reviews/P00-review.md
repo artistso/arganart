@@ -23,8 +23,9 @@ actually run.
 | D1 | Compiling app that launches to an empty infinite canvas (pan/zoom only) | **UNVERIFIED** (build) / content reviewed | `CanvasScreen` → `InfiniteCanvas` → `CanvasViewport`; the only gesture handler is `detectTransformGestures`. |
 | D2 | ARCHITECTURE.md with the six rules plus a module dependency diagram | **YES** | `ARCHITECTURE.md` §1 (rules, each with its enforcement), §2 (diagram + edge table). |
 | D3 | DECISIONS.md with stack choices and rejected alternatives | **YES** | `DECISIONS.md` D1–D11, each with rejected alternatives and revisit triggers. |
+| D4a | JankStats integration + debug-only FPS/frame-time overlay via hidden gesture | **YES (code); unverified on device** | `FrameDiagnostics` (JankStats bridge), `DebugFrameOverlay` (three taps, bottom-left), `:core:diagnostics` with 18 host tests. The *measurement* is unverified: no device. |
 | D4 | A stub procedural MotionBackend returning a simple eased translation | **YES, beyond the letter** | `ProceduralMotionBackend` + `EasedTranslationClip`; 6 tests in `ProceduralMotionBackendTest`, 10 in `EasedTranslationClipTest`, all executed and passing. |
-| D5 | CI: assemble + lint + unit test on push | **WRITTEN, UNVERIFIED** | `.github/workflows/ci.yml` has three jobs (architecture, build+lint+test, report upload). Never executed: the wrapper jar is absent (see gap G2). |
+| D5 | CI: assemble + lint + unit test on push | **WRITTEN, UNVERIFIED** | `.github/workflows/ci.yml` has two jobs (architecture; assemble+lint+test). The wrapper is now committed, so CI is *runnable* for the first time — but it has still never executed. |
 
 ### Evidence that the pure core really compiles and passes
 
@@ -35,10 +36,10 @@ $ JAVA_HOME=<temurin 21.0.8> kotlinc = kotlin 2.4.21
 $ tools/kotlin-verify/verify.sh
 == compile main sources ==          (5 modules, zero errors, warnings suppressed only for /^warning:/)
 == compile tests ==
-tests passed: 39, failed: 0
+tests passed: 57, failed: 0
 ```
 
-39 tests across 5 classes:
+57 tests across 6 classes:
 
 | Test class | Tests | Covers |
 | --- | --- | --- |
@@ -47,11 +48,12 @@ tests passed: 39, failed: 0
 | `ProceduralMotionBackendTest` | 6 | budget compliance, canvas-unit mapping, per-character curves, determinism |
 | `CanvasTransformTest` | 5 | pan, anchored zoom, clamping, round-trip |
 | `RegistryAndStubsTest` | 6 | registry wiring, honest absence (throws rather than fabricates), budget compliance |
+| `FrameWindowTest` | 18 | percentile maths, bounded ring, jank ceiling, tail-latency detection, INSUFFICIENT_DATA |
 
 **Negative control.** To prove the harness reports real failures, one expectation was
 deliberately corrupted (`assertEquals(30f, r.width)` → `31f`); the run reported
 `FAIL ... expected <31.0> but was <30.0>`, `tests passed: 38, failed: 1`, exit 1. Restored,
-re-ran, 39/0. So the green result is not a harness that always says yes.
+re-ran, 57/0. So the green result is not a harness that always says yes.
 
 ---
 
@@ -150,21 +152,23 @@ Applied in this phase unless marked otherwise.
    impossible here)* The catalog versions are a considered baseline, not a verified set.
    Expect at least one bump (AGP/compileSdk pairing and Compose BOM are the likely ones).
    Record any bump in `DECISIONS.md`.
-2. **Commit the Gradle wrapper.** *(not applied — needs a machine with Gradle:
-   `gradle wrapper --gradle-version 8.11.1`)* Without `gradle/wrapper/gradle-wrapper.jar`
-   the CI workflow cannot run and the DoD line "assembleDebug succeeds" is unverifiable
-   for everyone, not just this sandbox.
+2. ~~**Commit the Gradle wrapper.**~~ **DONE.** `gradlew`, `gradlew.bat` and
+   `gradle/wrapper/gradle-wrapper.jar` are committed — the official 8.11.1 wrapper
+   (sha256 `2db75c40…4846046`, 43,583 bytes), taken from the `v8.11.1` tag via the GitHub
+   API because the distribution host is unreachable here. CI is now *runnable*; it still
+   has not run.
 3. **Launch on an emulator and one physical tablet.** *(not applied — no device)* Confirm
    the empty canvas pans and zooms at refresh rate, and that the theme applies without a
    transparent-window flicker on API 29.
 
 ### P2 — should fix, small
 
-4. **Reconsider the `suspend` signature** (DECISIONS D4). One-line change if you want
-   literal fidelity to the brief. Currently a stated deviation.
-5. **Add JankStats + the hidden-gesture FPS overlay.** *(P1's job in practice)* The brief
-   lists it under P0's instrumentation. Deferred because there is nothing meaningful to
-   measure on a canvas with no draw path; flagged rather than silently dropped.
+4. ~~**Reconsider the `suspend` signature.**~~ **CLOSED — keep non-suspending.** Reconfirmed
+   in D13. No further action.
+5. ~~**Add JankStats + the hidden-gesture FPS overlay.**~~ **NOW DONE.** The earlier
+   deferral was wrong and has been reversed: P1's DoD depends on JankStats, so deferring
+   the instrumentation would have blocked P1 rather than postponed work. Delivered as
+   `:core:diagnostics` + `FrameDiagnostics` + `DebugFrameOverlay` (D12).
 
 ### P3 — nice to have
 

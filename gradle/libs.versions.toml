@@ -38,6 +38,7 @@ androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 
+# JankStats: the frame-time source required by the P0 instrumentation brief.
 androidx-metrics-performance = { module = "androidx.metrics:metrics-performance", version.ref = "metrics" }
 
 junit = { module = "junit:junit", version.ref = "junit" }

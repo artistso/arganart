@@ -3,6 +3,9 @@ name: CI
 on:
   push:
     branches: ["**"]
+    # Tag pushes publish the APK to a Release (see publish-apk). Without this,
+    # creating a tag triggers nothing and the release stays empty.
+    tags: ["v*"]
   pull_request:
 
 concurrency:

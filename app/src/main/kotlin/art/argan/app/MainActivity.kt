@@ -40,7 +40,11 @@ public class MainActivity : ComponentActivity() {
         setContent {
             ArganTheme {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    CanvasScreen()
+                    CanvasScreen(
+                        onInputTimestamp = { eventTime ->
+                            frameDiagnostics.recordInputTimestamp(eventTime)
+                        },
+                    )
                     if (BuildConfig.DEBUG) {
                         DebugOverlayHost(frameDiagnostics, Modifier.align(Alignment.BottomStart))
                     }

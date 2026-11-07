@@ -293,25 +293,59 @@ def check_rule_6_hot_paths(report: Report) -> None:
         report.ok("R6", "every sampling API exposes an allocation-free destination-taking form")
 
 
-def check_phase_scope(report: Report) -> None:
-    """P0 must contain no drawing/animation/generation feature code.
+def current_phase() -> int:
+    """Read the phase this repo is currently working in.
 
-    Word-boundary matched against *declarations* only, so documentation that
-    names a later phase (as this repo's READMEs and ARCHITECTURE.md do) is fine.
+    The scope guard is not a P0 artefact that gets deleted when P0 closes; it is the
+    mechanism that keeps every phase honest. `CURRENT_PHASE` is the single line a
+    phase bumps, and the failure message tells you exactly which vocabularies are
+    not yet allowed.
     """
-    if not (REPO / "docs" / "phases" / "P00-scaffolding.md").exists():
-        return
+    marker = REPO / "docs" / "phases" / "CURRENT_PHASE"
+    if marker.exists():
+        text = marker.read_text(encoding="utf-8").strip().split()[0]
+        try:
+            return int(text)
+        except ValueError:
+            return 0
+    return 0
+
+
+# Vocabulary introduced by each phase, guarded until that phase starts.
+# Format: declaration fragment -> (phase it belongs to, description)
+PHASE_VOCABULARY = {
+    "MotionRibbon": (2, "motion ribbon"),
+    "MotionSpine": (2, "motion ribbon spine"),
+    "MotionNode": (2, "motion node"),
+    "SpringDynamics": (2, "spring dynamics"),
+    "SpatialResolver": (3, "spatial resolver"),
+    "CanvasObject": (3, "canvas prompt objects"),
+    "RoleAssignment": (3, "spatial role assignment"),
+    "GenerativeBrush": (4, "generative brushes"),
+    "GhostStroke": (4, "generative brush ghosting"),
+    "GenericnessMeter": (5, "genericness meter"),
+    "MutationKnob": (5, "mutation knob"),
+    "StyleFingerprintVector": (6, "fingerprint computation"),
+    "PoseMarker": (8, "pose markers"),
+    "MotionBrush": (8, "transition painting"),
+}
+
+
+def check_phase_scope(report: Report) -> None:
+    """Nothing from a *later* phase may exist yet.
+
+    Word-boundary matched against *declarations* only, so documentation that names a
+    later phase (as this repo's READMEs and ARCHITECTURE.md do) is fine.
+    """
+    phase = current_phase()
     later_phase_declarations = {
-        "MotionEvent": "stylus input (P1)",
-        "BrushParams": "brush model (P1)",
-        "class Stroke": "stroke model (P1)",
-        "MotionRibbon": "motion ribbon (P2)",
-        "SpatialResolver": "spatial resolver (P3)",
-        "GenerativeBrush": "generative brushes (P4)",
-        "GenericnessMeter": "genericness meter (P5)",
-        "StyleFingerprintVectors": "fingerprint computation (P6)",
-        "OnnxSession": "model runtime (P7)",
+        name: f"{what} (P{belongs_to})"
+        for name, (belongs_to, what) in PHASE_VOCABULARY.items()
+        if belongs_to > phase
     }
+    if not later_phase_declarations:
+        report.ok("SCOPE", f"P{phase}: no later phase is defined; nothing to guard")
+        return
     found = False
     before = len(report.errors)
     for mod in ALLOWED_MODULES:
@@ -326,7 +360,11 @@ def check_phase_scope(report: Report) -> None:
                             found = True
                             break
     if len(report.errors) == before:
-        report.ok("SCOPE", "no code from any later phase is present")
+        report.ok(
+            "SCOPE",
+            f"P{phase}: no code from a later phase is present "
+            f"({len(later_phase_declarations)} vocabularies guarded)",
+        )
 
 
 def rel(path: Path) -> str:

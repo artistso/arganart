@@ -15,6 +15,19 @@
         android:normalScreens="true"
         android:xlargeScreens="true" />
 
+    <!--
+      Stylus-first, but installable everywhere: declare the stylus hardware as a
+      nice-to-have so phones and tablets without an active pen can still install.
+      <uses-feature> is a manifest-level element; putting it inside <application>
+      is an AAPT error (caught by CI).
+    -->
+    <uses-feature
+        android:name="android.hardware.touchscreen.multitouch"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
     <application
         android:name=".ArganApplication"
         android:allowBackup="false"
@@ -34,10 +47,6 @@
             </intent-filter>
         </activity>
 
-        <!-- Stylus-first: declare hardware as optional so phones can install. -->
-        <uses-feature
-            android:name="android.hardware.touchscreen.multitouch"
-            android:required="false" />
     </application>
 
 </manifest>

@@ -1,0 +1,52 @@
+# Version catalog. Pinning policy: every entry is a deliberate, documented pin
+# (see DECISIONS.md, "Dependency pinning"). Nothing uses a dynamic version, and
+# nothing uses `+`.
+#
+# NOTE: the pins below are the P0 baseline. The first CI run on a machine with
+# Google Maven reachable is the authority on whether they resolve; if a pin is
+# stale, bump it in the same PR as the CI failure and record it in DECISIONS.md.
+
+[versions]
+# Android platform. minSdk 29 is a hard product requirement (P0 brief);
+# compileSdk/targetSdk track the latest stable platform.
+minSdk = "29"
+compileSdk = "36"
+targetSdk = "36"
+
+agp = "8.10.1"
+kotlin = "2.1.21"
+coroutines = "1.10.2"
+coreKtx = "1.16.0"
+lifecycle = "2.9.1"
+activityCompose = "1.10.1"
+composeBom = "2025.06.01"
+metrics = "1.0.0"
+junit = "4.13.2"
+
+[libraries]
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
+
+androidx-core-ktx = { module = "androidx.core:core-ktx", version.ref = "coreKtx" }
+androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycle" }
+androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+
+androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
+androidx-compose-ui = { module = "androidx.compose.ui:ui" }
+androidx-compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
+androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
+androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
+androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+
+# JankStats: the frame-time source required by the P0 instrumentation brief.
+androidx-metrics-performance = { module = "androidx.metrics:metrics-performance", version.ref = "metrics" }
+
+junit = { module = "junit:junit", version.ref = "junit" }
+kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

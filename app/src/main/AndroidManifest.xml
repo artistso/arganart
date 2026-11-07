@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      NO INTERNET PERMISSION. This is deliberate and is ARMOUR, not an oversight:
+      ARCHITECTURE.md rule 1 says all AI work is on-device and no network call is
+      made for generation, ever, in v1. With no INTERNET permission the platform
+      enforces that rule at runtime. P7 adds a narrowly-scoped, user-toggled
+      download path and is the only phase allowed to change this line.
+    -->
+
+    <!-- Tablet-first: no orientation lock, but declare the form-factor intent. -->
+    <supports-screens
+        android:largeScreens="true"
+        android:normalScreens="true"
+        android:xlargeScreens="true" />
+
+    <!--
+      Stylus-first, but installable everywhere: declare the stylus hardware as a
+      nice-to-have so phones and tablets without an active pen can still install.
+      <uses-feature> is a manifest-level element; putting it inside <application>
+      is an AAPT error (caught by CI).
+    -->
+    <uses-feature
+        android:name="android.hardware.touchscreen.multitouch"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.touchscreen"
+        android:required="false" />
+
+    <application
+        android:name=".ArganApplication"
+        android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.Argan">
+
+        <activity
+            android:name=".MainActivity"
+            android:configChanges="orientation|screenSize|screenLayout|keyboardHidden|density"
+            android:exported="true"
+            android:screenOrientation="fullSensor">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+    </application>
+
+</manifest>

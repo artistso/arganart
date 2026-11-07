@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- P0 scaffold banner. Removed in P1 when drawing exists. -->
+    <string name="canvas_phase_banner">P0 scaffold · pan and zoom only</string>
+</resources>

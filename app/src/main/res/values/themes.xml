@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      Minimal platform theme: all real theming is done in :design tokens.
+      Colour literals here would violate the "no hardcoded colours outside
+      :design and resources" rule, so the background is transparent and Compose
+      paints the canvas.
+    -->
+    <style name="Theme.Argan" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+</resources>

@@ -35,17 +35,28 @@ jobs:
       - name: Set up Android SDK
         uses: android-actions/setup-android@v4
 
+      # Install the platform explicitly rather than relying on AGP's own
+      # auto-download, so a missing platform fails here with a clear message
+      # instead of surfacing as a confusing build error later.
+      - name: Install Android platform
+        run: sdkmanager "platforms;android-36" "build-tools;35.0.0"
+
       - uses: gradle/actions/setup-gradle@v6
 
-      # The wrapper jar is committed in a normal checkout; see README if it is missing.
+      # Distinguishes a Gradle *configuration* failure (plugins, DSL, catalog)
+      # from a *compilation* failure. One cheap step that answers the question
+      # the build error alone does not.
+      - name: Configure
+        run: ./gradlew --no-daemon help --stacktrace
+
       - name: Assemble
-        run: ./gradlew --no-daemon assembleDebug
+        run: ./gradlew --no-daemon assembleDebug --stacktrace
 
       - name: Lint
-        run: ./gradlew --no-daemon lint
+        run: ./gradlew --no-daemon lint --stacktrace
 
       - name: Unit tests
-        run: ./gradlew --no-daemon test
+        run: ./gradlew --no-daemon test --stacktrace
 
       - name: Upload reports
         if: always()

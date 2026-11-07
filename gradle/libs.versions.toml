@@ -21,6 +21,8 @@ lifecycle = "2.9.1"
 activityCompose = "1.10.1"
 composeBom = "2025.06.01"
 metrics = "1.0.0"
+# ONNX Runtime Android. Pinned to a verified release; see docs/research/model-feasibility.md.
+onnxruntime = "1.31.0"
 junit = "4.13.2"
 
 [libraries]
@@ -40,6 +42,9 @@ androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
 
 # JankStats: the frame-time source required by the P0 instrumentation brief.
 androidx-metrics-performance = { module = "androidx.metrics:metrics-performance", version.ref = "metrics" }
+
+# Runtime only. No weights are bundled and nothing in the UI uses this yet.
+onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntime" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
 kotlin-test-junit = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }

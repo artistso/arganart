@@ -222,6 +222,86 @@ fake and caller to own a scope. No further action.
 
 ---
 
+## D16 — Springs are closed-form, not integrated *(P2)*
+
+**Decision.** `SpringDynamics` evaluates the analytic step response of a damped harmonic
+oscillator: underdamped (decaying oscillation), critically damped, and overdamped
+(hyperbolic form) branches. There is no per-frame integrator anywhere in `:core:motion`.
+
+**Why.** The P2 brief requires a clip to be *sampleable at any t*, and scrubbing is a
+jump to an arbitrary t — including backwards. An integrator is stateful, so scrubbing to
+2000 ms would give a different answer depending on which frames happened to be drawn
+first. Playback would be path-dependent: the same clip would look different on a fast
+device than a slow one. That is precisely the property that makes spring systems feel
+non-deterministic, and it is invisible until someone scrubs.
+
+**Cost.** A closed form exists only for a *step* input, so a clip follows one segment of
+its ribbon per spring rather than accepting an arbitrary mid-flight force. This is why
+`MotionNode` carries both an easing character and spring parameters: easing shapes travel
+within a segment, the spring gives the segment's arrival its weight.
+
+**Also fixed by taking the closed form seriously.** The overdamped branch was written by
+hand-solving two exponentials and was wrong — it returned 2.0 at t = 0 instead of 0, so
+RELUCTANT motion began halfway along its path and never travelled. The test suite caught
+it because it asserted the endpoint, not the shape.
+
+---
+
+## D17 — Overshoot is expressed at the ribbon's END, not per segment *(P2)*
+
+**Decision.** Interior segments use a monotone (critically damped, same ωn) curve so
+travel is always forward. The final segment's excess above 1 becomes visible
+follow-through past the end of the ribbon, capped at 12% of its length.
+
+**Why.** Three attempts, each failing differently and each failure is why the rule is
+written down:
+
+1. **Clamp overshoot to 0..1 everywhere.** Elastic parked at each interior node for ~140 ms
+   (7 identical consecutive samples on a 600 ms clip). A plateau reads as a stutter, not
+   as weight.
+2. **Let every segment overshoot.** The element reversed direction at each interior node —
+   a 0.03-unit regression mid-ribbon, caught by the monotonicity test. Backwards motion
+   mid-path reads as a glitch.
+3. **Let only the last segment overshoot internally.** The element passed the ribbon end
+   and then came BACK before arriving. Also backwards motion, just at the end.
+
+The fix separates the two concerns: travel through a point is monotone, arrival at the end
+carries weight. Both are visible and neither reverses.
+
+---
+
+## D18 — The scope guard is phase-aware and permanent *(P1, rebuilt in P2)*
+
+**Decision.** `tools/check-architecture.py` reads `docs/phases/CURRENT_PHASE` and guards
+the vocabulary of every *later* phase. Bumping the phase number is what opens a
+vocabulary.
+
+**Why not delete it when P0 closed.** The guard's purpose — "nothing from a later phase
+exists yet" — is a standing property, not a P0 chore. Re-aiming it costs one line per
+phase and catches the same class of mistake every time: P2 leaking a spatial resolver,
+P4 leaking a genericness meter. Entries for completed phases are kept deliberately; they
+cost nothing and document when each concept entered the product.
+
+---
+
+## D19 — Paper is the default theme *(P2)*
+
+**Decision.** `ArganTheme` defaults to `darkTheme = false` rather than
+`isSystemInDarkTheme()`. The dark palette still exists and P9 exposes the toggle.
+
+**Why.** This came from user feedback, and it is a correctness point rather than taste: a
+drawing app that opens to a near-black rectangle with no visible structure reads as an
+unfinished tool. Most devices default to dark, so "follow the system" meant most users
+met the worst version of the product first. Two related defects surfaced from the same
+report: the ink surface hardcoded a near-black ink colour, so drawing on the dark canvas
+produced *invisible ink*; and strokes rendered as constant-width polylines, discarding the
+4096 pressure levels the pipeline had carefully carried from `MotionEvent`.
+
+**Rule taken from this.** The default configuration must be the one that demonstrates the
+product. A non-default option can be worse; the default cannot.
+
+---
+
 ## Dependency pinning policy
 
 Pinned, no dynamic versions, no `+`. The catalog is the single place to bump anything.

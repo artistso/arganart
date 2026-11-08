@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Motion ribbon chrome. The wording avoids "timeline", "playhead" and "keyframe"
+         on purpose: the P2 brief bans the timeline model, and a label is how that model
+         would creep back into the product's vocabulary. -->
+    <string name="motion_ribbon">Motion</string>
+    <string name="motion_play">Play</string>
+    <string name="motion_pause">Pause</string>
+    <string name="motion_character">Feel</string>
+    <string name="motion_character_smooth">Smooth</string>
+    <string name="motion_character_snappy">Snappy</string>
+    <string name="motion_character_elastic">Elastic</string>
+    <string name="motion_character_reluctant">Reluctant</string>
+    <string name="motion_speed">Speed here</string>
+    <string name="motion_hold">Hesitate</string>
+    <string name="motion_node_hint">Tap a node on the ribbon to shape it. Drag along the ribbon to move through the motion.</string>
+    <string name="motion_done">Done</string>
+</resources>

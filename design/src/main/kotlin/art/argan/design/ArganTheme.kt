@@ -44,6 +44,13 @@ public data class ArganColors(
     val ghostSuggestion: Color,
     /** The motion ribbon: deliberately neither ink nor UI chrome (P2). */
     val ribbon: Color,
+    /** Ribbon highlight where a node sits; warmer and lighter than [ribbon]. */
+    val ribbonNode: Color,
+    /** The element a ribbon drives, so motion reads before the user knows what it is. */
+    val ribbonElement: Color,
+    /** Editorial text on paper: the welcome card's heading and body. */
+    val paperInk: Color,
+    val paperInkMuted: Color,
     /** Spatial objects: the "object" language, subtle, distinct from ink (P3). */
     val objectChrome: Color,
     val chromeSurface: Color,
@@ -80,6 +87,10 @@ private val ArganLightColors = ArganColors(
     inkPredicted = Color(0xFF141210),
     ghostSuggestion = Color(0xFF3D6BE0),
     ribbon = Color(0xFFB4531F),
+    ribbonNode = Color(0xFFE0733A),
+    ribbonElement = Color(0xFF8C3F1C),
+    paperInk = Color(0xFF2A2621),
+    paperInkMuted = Color(0xFF8A8378),
     objectChrome = Color(0x33403A33),
     chromeSurface = LightChrome,
     chromeContent = LightContent,
@@ -94,6 +105,10 @@ private val ArganDarkColors = ArganColors(
     inkPredicted = Color(0xFFF2EEE8),
     ghostSuggestion = Color(0xFF7E9CFF),
     ribbon = Color(0xFFE08A4F),
+    ribbonNode = Color(0xFFF5A96B),
+    ribbonElement = Color(0xFFFFC79B),
+    paperInk = Color(0xFFEDE9E3),
+    paperInkMuted = Color(0xFF9A948A),
     objectChrome = Color(0x33D8D2C8),
     chromeSurface = DarkChrome,
     chromeContent = DarkContent,
@@ -125,7 +140,16 @@ public object ArganTheme {
  */
 @Composable
 public fun ArganTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    /**
+     * Defaults to the PAPER theme, not the system's.
+     *
+     * The canvas is the product; a drawing surface should look like somewhere you would
+     * want to draw. Following the system by default meant most devices opened to a
+     * near-black rectangle with no visible structure, which reads as an unfinished tool
+     * rather than as a canvas. The dark palette still exists — P9 exposes the toggle, and
+     * it is the right choice for a dark room — but it is a choice, not the default.
+     */
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val colors = if (darkTheme) ArganDarkColors else ArganLightColors

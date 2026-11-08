@@ -23,6 +23,9 @@ composeBom = "2025.06.01"
 metrics = "1.0.0"
 # ONNX Runtime Android. Pinned to a verified release; see docs/research/model-feasibility.md.
 onnxruntime = "1.31.0"
+# Jetpack motion prediction: the Android equivalent of the web getPredictedEvents()
+# API that the P1 brief names but which does not exist on Android.
+motionprediction = "1.0.0"
 junit = "4.13.2"
 
 [libraries]
@@ -40,6 +43,8 @@ androidx-compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
 androidx-compose-ui-tooling = { module = "androidx.compose.ui:ui-tooling" }
 androidx-compose-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 androidx-compose-material3 = { module = "androidx.compose.material3:material3" }
+
+androidx-input-motionprediction = { module = "androidx.input:input-motionprediction", version.ref = "motionprediction" }
 
 # JankStats: the frame-time source required by the P0 instrumentation brief.
 androidx-metrics-performance = { module = "androidx.metrics:metrics-performance", version.ref = "metrics" }

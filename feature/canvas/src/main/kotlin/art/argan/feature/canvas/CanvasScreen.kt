@@ -303,13 +303,17 @@ private fun ToolbarTextButton(label: String, onClick: () -> Unit, enabled: Boole
 
 @Composable
 private fun ToolbarDivider() {
+    // `ArganTheme.colors` is a @Composable property, so it must be read HERE and captured
+    // by the draw lambda. Reading it inside `Canvas { }` is a composable call from a
+    // non-composable draw scope -- which the compiler rejected, correctly.
+    val dividerColor = ArganTheme.colors.canvasGrid
     Box(
         modifier = Modifier
             .size(width = 1.dp, height = 20.dp)
             .padding(vertical = 2.dp),
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
-            drawRect(color = ArganTheme.colors.canvasGrid)
+            drawRect(color = dividerColor)
         }
     }
 }

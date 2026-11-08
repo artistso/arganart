@@ -136,8 +136,10 @@ private fun DrawScope.drawPressureStroke(path: Path, progress: Float, color: Col
     for (i in 0..steps) {
         val t = (i.toFloat() / steps) * progress
         val x = margin + usable * t
+        // `sin` takes and returns Double, so the argument is widened and the result
+        // narrowed explicitly rather than relying on implicit conversion.
         val y = height * 0.5f -
-            kotlin.math.sin(t * Math.PI * 1.6f) * height * 0.22f +
+            kotlin.math.sin(t.toDouble() * Math.PI * 1.6).toFloat() * height * 0.22f +
             (t - 0.5f) * height * 0.18f
         if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
     }

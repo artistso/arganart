@@ -68,10 +68,6 @@ public class DrawingSurface(
      * ink so the view is usable on its own; the screen overrides it per theme.
      */
     public var inkColor: Int = DEFAULT_INK_COLOR
-        set(value) {
-            field = value
-            bristle = StrokeBristle(value)
-        }
 
     private var bristle = StrokeBristle(brush)
     private val pipelineState = StrokeBristle.State()

@@ -58,6 +58,16 @@ public class DrawingSurface(
     public var onInputTimestamp: ((eventTimeMillis: Long) -> Unit)? = null
 
     public var brush: BrushParams = BrushParams.DEFAULT
+
+    /**
+     * Ink colour, set from the theme rather than hardcoded.
+     *
+     * The surface previously used a constant near-black. That is correct on paper and
+     * invisible on the dark canvas -- drawing produced nothing the user could see, which
+     * is the worst possible failure mode for a drawing app. The default here is the paper
+     * ink so the view is usable on its own; the screen overrides it per theme.
+     */
+    public var inkColor: Int = DEFAULT_INK_COLOR
         set(value) {
             field = value
             bristle = StrokeBristle(value)
@@ -75,6 +85,7 @@ public class DrawingSurface(
 
     // Reused every frame: allocating a Path per frame is a measurable jank source.
     private val path = Path()
+    private val ribbonPath = Path()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         strokeCap = Paint.Cap.ROUND
@@ -264,7 +275,9 @@ public class DrawingSurface(
             var prevX = last.x
             var prevY = last.y
             predictedPaint.color = paint.color
-            predictedPaint.strokeWidth = paint.strokeWidth
+            // The predicted tail is a thin line: it marks where the nib is about to be,
+            // and matching the brush's full width there would look like committed ink.
+            predictedPaint.strokeWidth = (brush.size * 0.5f).coerceAtLeast(1f)
             // Slight alpha reduction so a glance can tell provisional from committed
             // without the promise being broken: the geometry is identical.
             predictedPaint.alpha = (paint.alpha * 0.75f).toInt()
@@ -280,28 +293,76 @@ public class DrawingSurface(
         }
     }
 
+    /**
+     * Draws a stroke as a pressure-varying band.
+     *
+     * ## Why not `drawPath` with a stroke width
+     *
+     * The first version drew each stroke as a single polyline with a constant width and
+     * a constant alpha. That is a *line*, not ink: the stylus's 4096 pressure levels were
+     * carried all the way from `MotionEvent` through the pipeline and then discarded at
+     * render time. Every stroke looked like a cable of the same thickness, which is a
+     * large part of why the canvas read as a prototype.
+     *
+     * So each sample is drawn as a filled quad whose half-width is the segment's average
+     * radius (from [art.argan.core.ink.Stamp.radiusAt]). Quads rather than round stamps:
+     * a stamp every 2 canvas units needs thousands of `drawCircle` calls per stroke,
+     * whereas adjacent quads share edges and produce a continuous ribbon at a fraction
+     * of the draw calls. Overlapping translucent quads would double-darken at every
+     * junction, so the segments are drawn into ONE [Path] and filled once — that single
+     * call is what keeps the alpha uniform.
+     */
     private fun drawStroke(canvas: Canvas, stroke: Stroke, target: Paint) {
         if (stroke.points.isEmpty()) return
-        target.color = INK_COLOR
+        target.color = inkColor
         target.alpha = (stroke.brush.opacity.coerceIn(0f, 1f) * 255).toInt()
-        target.strokeWidth = stroke.brush.size
 
-        path.reset()
-        val first = stroke.points.first()
-        path.moveTo(first.x, first.y)
-        if (stroke.points.size == 1) {
-            path.lineTo(first.x + 0.01f, first.y)
-        } else {
-            // Straight polylines are deliberate for P1's first milestone: the
-            // centripetal spline is wired and tested in :core:ink, and switching the
-            // renderer to it is a one-line change once the surface can be measured
-            // on hardware. Rendering every batched sample keeps latency minimal.
-            for (i in 1 until stroke.points.size) {
-                val p = stroke.points[i]
-                path.lineTo(p.x, p.y)
-            }
+        val stamp = stroke.brush.stamp()
+        val points = stroke.points
+
+        if (points.size == 1) {
+            val p = points[0]
+            target.style = Paint.Style.FILL
+            canvas.drawCircle(p.x, p.y, stamp.radiusAt(p.pressure), target)
+            target.style = Paint.Style.STROKE
+            return
         }
-        canvas.drawPath(path, target)
+
+        ribbonPath.reset()
+        // Per-segment half widths, so the two sides of the band can differ: that is what
+        // makes a stroke thin at one end and thick at the other rather than a tapered
+        // outline.
+        for (i in 0 until points.size - 1) {
+            val a = points[i]
+            val b = points[i + 1]
+            val dx = b.x - a.x
+            val dy = b.y - a.y
+            val length = kotlin.math.sqrt(dx * dx + dy * dy)
+            if (length < 1e-4f) continue
+            val nx = -dy / length
+            val ny = dx / length
+            val ra = stamp.radiusAt(a.pressure)
+            val rb = stamp.radiusAt(b.pressure)
+
+            // Build the quad for this segment into [quad], then append it to ribbonPath.
+            // (Path has no "add quad" that avoids allocation of the winding, so the
+            // quad's corners are added as lines; the fill rule merges them.)
+            if (ribbonPath.isEmpty) {
+                ribbonPath.moveTo(a.x + nx * ra, a.y + ny * ra)
+            } else {
+                ribbonPath.lineTo(a.x + nx * ra, a.y + ny * ra)
+            }
+            ribbonPath.lineTo(b.x + nx * rb, b.y + ny * rb)
+            ribbonPath.lineTo(b.x - nx * rb, b.y - ny * rb)
+            ribbonPath.lineTo(a.x - nx * ra, a.y - ny * ra)
+            ribbonPath.close()
+        }
+
+        target.style = Paint.Style.FILL
+        canvas.drawPath(ribbonPath, target)
+        // The same Paint is reused by the predicted-tail pass, which strokes a line.
+        // Leaving FILL set would make predictions render as invisible hairlines.
+        target.style = Paint.Style.STROKE
     }
 
     /** Removes the most recent stroke: used by undo. */
@@ -320,8 +381,8 @@ public class DrawingSurface(
     }
 
     private companion object {
-        /** Ink is near-black rather than pure black: pure black reads as a hole. */
-        const val INK_COLOR = 0xFF141210.toInt()
+        /** Ink is near-black rather than pure black: pure black reads as a hole on paper. */
+        const val DEFAULT_INK_COLOR = 0xFF141210.toInt()
 
         /** Exposed for the settings sheet so it can preview the same response curve. */
         val PREVIEW_RESPONSE: PressureResponse = PressureResponse.SOFT

@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="brush_settings_title">Brush</string>
-    <string name="brush_size">Size</string>
-    <string name="brush_smoothing">Smoothing</string>
-    <string name="brush_stabilizer">Stabilizer</string>
-    <string name="brush_response">Pressure response</string>
-    <string name="done">Done</string>
-    <string name="tool_brush">Ink</string>
-    <string name="tool_undo">Undo</string>
-    <string name="tool_redo">Redo</string>
-    <string name="canvas_hint">Draw with the stylus · two fingers to pan</string>
-    <!-- Step position in undo history, e.g. "3 / 12". -->
-    <string name="history_position">%1$d / %2$d</string>
+    <!-- Canvas chrome. Every label names an action the user can take, not a feature
+         the codebase has. Pre-review these traded internal names ("brush", "redo")
+         for words a person would use. -->
+    <string name="canvas_welcome_title">Argan</string>
+    <string name="canvas_welcome_body">Draw with the stylus. Pressure changes the line, so press hard for weight and lift for a fine tail.</string>
+    <string name="canvas_welcome_hint">Start drawing anywhere. This card disappears once you do.</string>
+    <string name="canvas_history_position">%1$d of %2$d steps</string>
+    <string name="canvas_undo">Undo</string>
+    <string name="canvas_redo">Redo</string>
+    <string name="canvas_brush">Line</string>
+    <string name="canvas_brush_sheet_title">Line</string>
+    <string name="canvas_brush_size">Width</string>
+    <string name="canvas_brush_smoothing">Smoothing</string>
+    <string name="canvas_brush_stabilisation">Stabilisation</string>
+    <string name="canvas_brush_response">Pressure response</string>
+    <string name="canvas_brush_preview_hint">Preview</string>
+    <string name="canvas_brush_done">Done</string>
+    <string name="canvas_response_linear">Linear</string>
+    <string name="canvas_response_soft">Soft</string>
+    <string name="canvas_response_firm">Firm</string>
 </resources>

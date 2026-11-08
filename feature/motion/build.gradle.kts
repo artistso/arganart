@@ -1,8 +1,9 @@
 // Motion ribbon editor surface.
 //
-// P0 SCOPE NOTE (deliberate): the ribbon UI is P2. This module compiles to an
-// empty-but-real placeholder so the module graph exists as specified, and so
-// tools/check-architecture.py can prove that no P2 code has leaked in early.
+// P2: the ribbon overlay (its own layer above the ink), the node inspector, and the
+// editing state that owns the clock. It depends on :core:motion for the model and on
+// :design for tokens -- never on :feature:canvas, so the ribbon can be composed over
+// any surface.
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
@@ -37,5 +38,10 @@ dependencies {
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.ui.graphics)
+    implementation(libs.androidx.compose.foundation)
     implementation(libs.androidx.compose.material3)
+
+    testImplementation(libs.kotlin.test.junit)
+    testImplementation(libs.junit)
 }

@@ -296,28 +296,46 @@ def check_rule_6_hot_paths(report: Report) -> None:
 def current_phase() -> int:
     """Read the phase this repo is currently working in.
 
-    The scope guard is not a P0 artefact that gets deleted when P0 closes; it is the
-    mechanism that keeps every phase honest. `CURRENT_PHASE` is the single line a
-    phase bumps, and the failure message tells you exactly which vocabularies are
-    not yet allowed.
+    The scope guard is not a P0 artefact to be deleted when P0 closes; it is the
+    mechanism that keeps every phase honest. `docs/phases/CURRENT_PHASE` is the single
+    line a phase bumps, and bumping it is what OPENS a vocabulary.
+
+    Why this design rather than deleting the guard at P0's end: the guard's purpose is
+    "nothing from a later phase exists yet", which is a standing property, not a P0
+    chore. Re-aiming it at each phase costs one line per phase and catches exactly the
+    same class of mistake every time -- P2 leaking a spatial resolver, P4 leaking a
+    genericness meter. Deleting it at P0 would have thrown that away.
     """
     marker = REPO / "docs" / "phases" / "CURRENT_PHASE"
     if marker.exists():
-        text = marker.read_text(encoding="utf-8").strip().split()[0]
-        try:
-            return int(text)
-        except ValueError:
-            return 0
+        text = marker.read_text(encoding="utf-8").strip().split()
+        if text:
+            try:
+                return int(text[0])
+            except ValueError:
+                return 0
     return 0
 
 
 # Vocabulary introduced by each phase, guarded until that phase starts.
-# Format: declaration fragment -> (phase it belongs to, description)
+# Format: needle -> (phase it belongs to, description).
+#
+# NOTE: entries for COMPLETED phases are kept deliberately. They cost nothing, they
+# document when each concept entered the product, and if a future refactor deletes a
+# module the needles still describe the intended order.
 PHASE_VOCABULARY = {
+    # P1 -- ink
+    "MotionEvent": (1, "stylus input"),
+    "BrushParams": (1, "brush model"),
+    "class Stroke": (1, "stroke model"),
+    "StrokeBristle": (1, "stroke pipeline"),
+    "TileGrid": (1, "tile cache"),
+    # P2 -- motion
     "MotionRibbon": (2, "motion ribbon"),
-    "MotionSpine": (2, "motion ribbon spine"),
+    "MotionSpine": (2, "motion spine"),
     "MotionNode": (2, "motion node"),
     "SpringDynamics": (2, "spring dynamics"),
+    # P3+
     "SpatialResolver": (3, "spatial resolver"),
     "CanvasObject": (3, "canvas prompt objects"),
     "RoleAssignment": (3, "spatial role assignment"),
@@ -326,6 +344,7 @@ PHASE_VOCABULARY = {
     "GenericnessMeter": (5, "genericness meter"),
     "MutationKnob": (5, "mutation knob"),
     "StyleFingerprintVector": (6, "fingerprint computation"),
+    "OnnxSession": (7, "model runtime"),
     "PoseMarker": (8, "pose markers"),
     "MotionBrush": (8, "transition painting"),
 }
@@ -334,36 +353,40 @@ PHASE_VOCABULARY = {
 def check_phase_scope(report: Report) -> None:
     """Nothing from a *later* phase may exist yet.
 
-    Word-boundary matched against *declarations* only, so documentation that names a
-    later phase (as this repo's READMEs and ARCHITECTURE.md do) is fine.
+    Word-boundary matched against *declarations*, and comment lines are skipped, so
+    documentation that names a later phase (as this repo's READMEs and ARCHITECTURE.md
+    do) is fine.
     """
     phase = current_phase()
-    later_phase_declarations = {
-        name: f"{what} (P{belongs_to})"
-        for name, (belongs_to, what) in PHASE_VOCABULARY.items()
-        if belongs_to > phase
+    later = {
+        needle: f"{what} (P{belongs})"
+        for needle, (belongs, what) in PHASE_VOCABULARY.items()
+        if belongs > phase
     }
-    if not later_phase_declarations:
+    if not later:
         report.ok("SCOPE", f"P{phase}: no later phase is defined; nothing to guard")
         return
-    found = False
+
     before = len(report.errors)
     for mod in ALLOWED_MODULES:
         for path in kotlin_files(mod):
             text = path.read_text(encoding="utf-8")
-            for needle, what in later_phase_declarations.items():
-                if re.search(rf"\b{re.escape(needle)}\b(?!.*(intentionally|deliberately|P\d))", text):
-                    # allow mentions inside comments
-                    for line in text.splitlines():
-                        if needle in line and not line.strip().startswith(("//", "*", "/*")):
-                            report.error("SCOPE", rel(path), f"{what} present in P0: {line.strip()}")
-                            found = True
-                            break
+            for needle, what in later.items():
+                if not re.search(rf"\b{re.escape(needle)}\b", text):
+                    continue
+                for line in text.splitlines():
+                    stripped = line.strip()
+                    if needle in stripped and not stripped.startswith(("//", "*", "/*")):
+                        report.error(
+                            "SCOPE", rel(path),
+                            f"{what} present while the repo is in P{phase}: {stripped}",
+                        )
+                        break
     if len(report.errors) == before:
         report.ok(
             "SCOPE",
             f"P{phase}: no code from a later phase is present "
-            f"({len(later_phase_declarations)} vocabularies guarded)",
+            f"({len(later)} vocabularies guarded)",
         )
 
 

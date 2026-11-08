@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,13 +20,17 @@ import art.argan.core.diagnostics.FrameBudget
 import art.argan.core.diagnostics.FrameWindow
 import art.argan.design.ArganTheme
 import art.argan.feature.canvas.CanvasScreen
+import art.argan.feature.motion.MotionControls
+import art.argan.feature.motion.MotionInspectorSheet
+import art.argan.feature.motion.MotionRibbonOverlay
+import art.argan.feature.motion.MotionRibbonState
 
 /**
- * The app's single activity.
+ * The app's single activity: the canvas, with the motion ribbon over it.
  *
- * At P0 it launches straight to the empty infinite canvas. Navigation exists as
- * a seam (P1 adds tools, P2 the ribbon) but there is exactly one destination, so
- * no navigation library is introduced yet.
+ * The ribbon is composed here rather than inside `:feature:canvas` so that module keeps
+ * knowing nothing about motion. The module graph points `:app` at both features and
+ * nowhere else, which is what stops the canvas from growing a motion dependency later.
  */
 public class MainActivity : ComponentActivity() {
 
@@ -45,6 +50,36 @@ public class MainActivity : ComponentActivity() {
                             frameDiagnostics.recordInputTimestamp(eventTime)
                         },
                     )
+
+                    val ribbonState = remember { MotionRibbonState() }
+                    var inspectorOpen by remember { mutableStateOf(false) }
+
+                    // Separate layer above the ink. A motion frame invalidates this
+                    // Canvas only; the ink View behind it is not redrawn, which is the
+                    // P2 requirement that ribbon editing cannot cost ink frames.
+                    MotionRibbonOverlay(
+                        state = ribbonState,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+
+                    MotionControls(
+                        state = ribbonState,
+                        onOpenInspector = { inspectorOpen = !inspectorOpen },
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(ArganTheme.dimensions.md),
+                    )
+
+                    if (inspectorOpen) {
+                        MotionInspectorSheet(
+                            state = ribbonState,
+                            onDismiss = { inspectorOpen = false },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(ArganTheme.dimensions.md),
+                        )
+                    }
+
                     if (BuildConfig.DEBUG) {
                         DebugOverlayHost(frameDiagnostics, Modifier.align(Alignment.BottomStart))
                     }

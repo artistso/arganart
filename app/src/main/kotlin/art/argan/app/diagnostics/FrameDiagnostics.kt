@@ -44,25 +44,6 @@ public class FrameDiagnostics private constructor(
         jankStats = stats
     }
 
-    /**
-     * Records the input-to-photon estimate for the input that caused the next frame.
-     *
-     * HOW THIS IS MEASURED. The stylus event carries a platform timestamp. When the
-     * frame containing its ink is handed to the display, `onFrame` fires; the
-     * difference is the honest end-to-end latency the user actually feels. It is an
-     * *estimate* in one respect: we take the frame's start time as the photon
-     * deadline rather than reading the display's actual presentation time, which
-     * Android does not expose to apps without privileged access. It therefore
-     * under-reports by roughly one vsync.
-     *
-     * Call this from the input path, immediately after receiving a drawable event.
-     */
-    public fun recordInputTimestamp(eventTimeMillis: Long) {
-        pendingInputNanos = eventTimeMillis * 1_000_000L
-    }
-
-    private var pendingInputNanos: Long = -1L
-
     /** Pauses collection (backgrounded). Frames are not counted while paused. */
     public fun pause() {
         jankStats?.isTrackingEnabled = false
@@ -98,17 +79,13 @@ public class FrameDiagnostics private constructor(
         //   FrameData(frameStartNanos: Long, frameDurationUiNanos: Long,
         //             isJank: Boolean, states: List<StateInfo>)
         // Both properties used here are public with private setters.
-        // Attach the pending input timestamp to exactly one frame: the first frame
-        // after the input. Leaving it set would credit every later frame with the
-        // same latency and quietly halve the reported average.
-        val inputNanos = pendingInputNanos.takeIf { it >= 0 }
-        pendingInputNanos = -1L
-        val latency = inputNanos?.let { (frameData.frameStartNanos - it).coerceAtLeast(0L) }
-
         val stat = FrameStat(
             frameStartNanos = frameData.frameStartNanos,
             frameEndNanos = frameData.frameStartNanos + frameData.frameDurationUiNanos,
-            inputToPhotonNanos = latency,
+            // JankStats does not expose input-to-photon; P1 adds an explicit
+            // estimate from the stylus event timestamp when the ink path lands.
+            // Reporting a fabricated latency here would poison the budget test.
+            inputToPhotonNanos = null,
             isJanky = frameData.isJank,
         )
         window.record(stat)

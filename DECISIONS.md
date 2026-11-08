@@ -222,51 +222,6 @@ fake and caller to own a scope. No further action.
 
 ---
 
-## D14 — Ink surface is a backend-agnostic `View` for P1; renderer choice deferred with reason *(P1)*
-
-**Decision.** The ink surface is a `View` with `onDraw`, not `GLSurfaceView` and not a
-Skia-backed `SurfaceView`. It implements raw `MotionEvent` handling, four separated layers,
-predicted-tail rendering and the pen-up flush. The renderer swap is left as a contained
-change (D14 open question).
-
-**Why.** The P1 brief permits Skia "if you can demonstrate equal or better
-input-to-photon", and requires the backend choice be justified in this file. Neither backend
-can be *demonstrated* without hardware. Writing "GL is faster" without a measurement would
-be inventing evidence in the exact document that exists to prevent that — and choosing wrong
-is expensive to reverse once tiling and stroke rendering are built on it.
-
-So P1 ships the part that is provably correct independent of backend, and P1's review makes
-"measure, then choose" the top open item rather than an afterthought.
-
-**Rejected.** Committing to GLSurfaceView now (unjustifiable without a number); Skia via a
-third-party binding (adds a large dependency before we know we need it).
-
-**Revisit at.** The first device measurement. The decision criterion is stated up front so
-it cannot drift: whichever backend hits median input-to-photon < 16 ms with the tile layer
-and spline rendering enabled, on a mid-range 2023 tablet.
-
----
-
-## D15 — `MotionEvent.getPredictedEvents()` does not exist; use Jetpack motion prediction *(P1)*
-
-**Decision.** Prediction comes from `androidx.input:input-motionprediction` 1.0.0
-(`MotionEventPredictor.newInstance(view)`, `record(event)`, `predict(): MotionEvent?`), not
-from the API the P1 brief names.
-
-**Why.** `MotionEvent.getPredictedEvents()` is not an Android API. It is defined by the W3C
-Pointer Events Level 3 specification (and by Amazon's Fire stylus SDK); AOSP's
-`MotionEvent.java` contains no prediction surface at all — verified by searching the file on
-`main` and `android14-release`: zero occurrences of "predict". The brief's *intent* — render
-predicted frames on a layer that is replaced, not blended — is preserved exactly; only the
-mechanism differs.
-
-**Consequence.** The predicted layer renders at most one predicted event per frame (the
-predictor returns the next frame's event). That matches the brief's "up to 2 predicted
-frames" once a second prediction is chained, which is left for the device measurement to
-justify.
-
----
-
 ## Dependency pinning policy
 
 Pinned, no dynamic versions, no `+`. The catalog is the single place to bump anything.

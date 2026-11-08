@@ -46,7 +46,7 @@ public fun BrushSettingsSheet(
     ) {
         Column(modifier = Modifier.padding(ArganTheme.dimensions.md)) {
             Text(
-                text = stringResource(R.string.brush_settings_title),
+                text = stringResource(R.string.canvas_brush_sheet_title),
                 style = MaterialTheme.typography.titleMedium,
             )
             Spacer(Modifier.height(ArganTheme.dimensions.md))
@@ -56,19 +56,19 @@ public fun BrushSettingsSheet(
             Spacer(Modifier.height(ArganTheme.dimensions.md))
 
             SliderRow(
-                label = stringResource(R.string.brush_size),
+                label = stringResource(R.string.canvas_brush_size),
                 value = brush.size,
                 range = 1f..40f,
                 onChange = { onBrushChange(brush.copy(size = it)) },
             )
             SliderRow(
-                label = stringResource(R.string.brush_smoothing),
+                label = stringResource(R.string.canvas_brush_smoothing),
                 value = brush.smoothingStrength,
                 range = 0f..1f,
                 onChange = { onBrushChange(brush.copy(smoothingStrength = it)) },
             )
             SliderRow(
-                label = stringResource(R.string.brush_stabilizer),
+                label = stringResource(R.string.canvas_brush_stabilisation),
                 value = brush.stabilizerStrength,
                 range = 0f..1f,
                 onChange = { onBrushChange(brush.copy(stabilizerStrength = it)) },
@@ -76,7 +76,7 @@ public fun BrushSettingsSheet(
 
             Spacer(Modifier.height(ArganTheme.dimensions.sm))
             Text(
-                text = stringResource(R.string.brush_response),
+                text = stringResource(R.string.canvas_brush_response),
                 style = MaterialTheme.typography.labelMedium,
             )
             Row(modifier = Modifier.fillMaxWidth()) {
@@ -92,7 +92,7 @@ public fun BrushSettingsSheet(
 
             Spacer(Modifier.height(ArganTheme.dimensions.md))
             Button(onClick = onDismiss) {
-                Text(stringResource(R.string.done))
+                Text(stringResource(R.string.canvas_brush_done))
             }
         }
     }
